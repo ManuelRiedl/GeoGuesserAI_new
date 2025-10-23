@@ -3,8 +3,8 @@
 OVERPASS_API_URL = "https://overpass-api.de/api/interpreter"
 OVERPASS_SAVE_DIR = "data/overpass_fetch"
 BASE_FOLDER = "images_test_overpass"
-MODEL_STAGE1 = "runs/europe_bollard_basic/weights/best.pt"
-MODEL_STAGE2 = "runs/europe_bollard_all/weights/best.pt"
+MODEL_STAGE1 = "saved_models/europe_bollard_basic/weights/best.pt"
+MODEL_STAGE2 = "saved_models/europe_bollard_all/weights/best.pt"
 MODEL_NUM_PLATES = "runs/detect/numplate_detector3/weights/best.pt"
 SAVE_IMAGES = True
 IMAGE_SIZE_STAGE = 640
@@ -36,8 +36,8 @@ current_save_file = None
 meta_validate_results = {"austria_bollard":("austria_bollard","slovenia_bollard"),"germany_bollard":("germany_bollard","germany_bollard_reflector","luxenburg_bollard","spain_bollard"),"luxenburg_bollard":("luxenburg_bollard","luxenburg_bollard_reflector","germany_bollard","hungary_bollard"),"slovenia_bollard":("slovenia_bollard","slovenia_bollard_reflector","austria_bollard"),"france_bollard":("france_bollard","france_bollard"),"spain_bollard":("spain_bollard","germany_bollard"),"portugal_bollard":("germany_bollard","portugal_bollard","spain_bollard","france_bollard"),"italy_bollard":("italy_bollard","italy_bollard"),"polen_bollard":("polen_bollard","france_bollard"),"hungary_bollard":("hungary_bollard","polen_bollard","germany_bollard"),"czechia_bollard":("czechia_bollard","italy_bollard"),"croatia_bollard":("croatia_bollard","germany_bollard"),"lithuania_bollard":("lithuania_bollard","germany_bollard"),"latvia_bollard":("latvia_bollard","estonia_bollard"),"estonia_bollard":("estonia_bollard","latvia_bollard","latvia_bollard"),"finland_bollard":("finland_bollard","estonia_bollard"),
                          "sweden_bollard":("sweden_bollard","germany_bollard","estonia_bollard"),"norway_bollard":("norway_bollard","finland_bollard"),"iceland_bollard":("iceland_bollard","iceland_bollard")}
 #TODO special bollard in spain (france_bollard - is a type in spain)
-SAVE_RESUME_FETCHING_FILE = "resume_progress_save_state.json"
-SAVE_STATE_FILE = "save_state_application.json"
+SAVE_RESUME_FETCHING_FILE = "application_save/resume_progress_save_state.json"
+SAVE_STATE_FILE = "application_save/save_state_application.json"
 metas_query_mapping = {
     "austria_bollard": None,
     "germany_bollard": None,
