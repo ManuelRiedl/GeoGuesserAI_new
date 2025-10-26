@@ -5,7 +5,8 @@ OVERPASS_SAVE_DIR = "data/overpass_fetch"
 BASE_FOLDER = "images_test_overpass"
 MODEL_STAGE1 = "saved_models/europe_bollard_basic/weights/best.pt"
 MODEL_STAGE2 = "saved_models/europe_bollard_all/weights/best.pt"
-MODEL_NUM_PLATES = "runs/detect/numplate_detector3/weights/best.pt"
+#https://github.com/sekilab/VehicleOrientationDataset
+CAR_MODEL = "saved_models/best-fp16.tflite"
 SAVE_IMAGES = True
 IMAGE_SIZE_STAGE = 640
 CONF_THRESHOLD_STAGE1 = 0.5
@@ -23,6 +24,21 @@ one_sleep_time_in_seconds = 1
 one_five_sleep_time_in_seconds = 1.5
 two_sleep_time_in_seconds = 2
 four_sleep_time_in_seconds = 4
+
+CLASS_LABELS_CARS = [
+    "car_back","car_side","car_front",
+    "bus_back","bus_side","bus_front",
+    "truck_back","truck_side","truck_front",
+    "motorcycle_back","motorcycle_side","motorcycle_front",
+    "bicycle_back","bicycle_side","bicycle_front"
+]
+KEEP_CLASSES_CARS = {
+    "car_back","car_front",
+    "bus_back","bus_front",
+    "truck_back","truck_front",
+    "motorcycle_back","motorcycle_front"
+}
+
 settings = {
     "save_filename": "locations.json",
     "append_mode": True,

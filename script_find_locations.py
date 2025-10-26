@@ -3,7 +3,9 @@ import math
 import os
 import random
 import threading
+import tensorflow as tf
 import time
+import warnings
 import sys
 from collections import Counter
 import pytesseract
@@ -41,6 +43,7 @@ import random
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn, TimeElapsedColumn
 from PIL import Image
 import io
+warnings.filterwarnings("ignore", category=UserWarning, module="tensorflow")
 prog = None
 class ProgressManager:
     def __init__(self, metas_to_fetch,driver):
@@ -442,28 +445,47 @@ def wait_for_streetview_fully_loaded(driver, check_interval=zero_five_sleep_time
         time.sleep(check_interval)
     return False
 
-
-def bounding_box(predictions,model,image_file_name,img,meta,lat,lon):
+def bounding_box(predictions, model, image_file_name, img, meta, lat, lon):
     # split by zoom step / pan
     split_by_ = image_file_name.split("_")
     zoom_lvl = split_by_[1][-1]
     pan_lvl = split_by_[2][1]
+
     if predictions is None or len(predictions) == 0:
         return None
+
     for box in predictions:
-        pred_label = model.names[int(box.cls[0])]
-        label_conf = f"{pred_label} {float(box.conf[0]):.2f}"
-        # draw a rectangle/label around the found detections
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        # saves the coords of the found detection (with the pan/zoom level)
-        found_detections.append((zoom_lvl, pan_lvl, ((x2 - x1) / 2) + x1, ((y2 - y1) / 2) + y1))
+        # Determine label and confidence depending on input type
+        if model is not None:
+            # YOLO model
+            pred_label = model.names[int(box.cls[0])]
+            score = float(box.conf[0])
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+        else:
+            # TF/TFLite detection
+            pred_label = box[6]        # label stored in last element
+            score = float(box[5])      # confidence
+            x1, y1, x2, y2 = map(int, box[0:4])
+
+        label_conf = f"{pred_label} {score:.2f}"
+
+        # Save the coords of the found detection (with the pan/zoom level)
+        found_detections.append((
+            zoom_lvl,
+            pan_lvl,
+            ((x2 - x1) / 2) + x1,
+            ((y2 - y1) / 2) + y1
+        ))
+
         if SAVE_IMAGES:
-            # bounding box
+            # Draw bounding box
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            (w, h), y = cv2.getTextSize(label_conf, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-            # for the label
+            # Draw label background
+            (w, h), _ = cv2.getTextSize(label_conf, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
             cv2.rectangle(img, (x1, y1 - h - 4), (x1 + w, y1), (0, 255, 0), -1)
+            # Put text
             cv2.putText(img, label_conf, (x1, y1 - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+
     if SAVE_IMAGES:
         output_path = os.path.join(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/labeled", image_file_name)
         cv2.imwrite(output_path, img)
@@ -663,7 +685,7 @@ def update_url_pitch(url, dy):
 
     return updated_url
 
-def look_at_object(driver, pan_index, obj_x, obj_y,meta, lat, lon, zoom_steps=2):
+def look_at_object(driver, pan_index, obj_x, obj_y,meta, lat, lon,idx, zoom_steps=2):
 
     global prog
     window_size = driver.get_window_size()
@@ -751,10 +773,10 @@ def look_at_object(driver, pan_index, obj_x, obj_y,meta, lat, lon, zoom_steps=2)
     time.sleep(one_sleep_time_in_seconds)
     zoomed_links.append(driver.current_url)
     if SAVE_IMAGES:
-        screenshot_path = os.path.join(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/zoom_folder", f"zoomed_p{pan_index}_{zoom_steps}.png")
+        screenshot_path = os.path.join(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/zoom_folder", f"zoomed_p{pan_index}_{idx}.png")
         driver.save_screenshot(screenshot_path)
 
-def zoom_in_found_objects(driver, url, pan_hold_time, meta,lat,lon):
+def zoom_in_found_objects(driver, url, pan_hold_time, meta,lat,lon,look_at_every_object = False):
     global prog
     if len(found_detections) == 0:
         prog.set_step(f"No meta detections found ({lat}, {lon})")
@@ -776,7 +798,7 @@ def zoom_in_found_objects(driver, url, pan_hold_time, meta,lat,lon):
             time.sleep(zero_five_sleep_time_in_seconds)
         time.sleep(zero_five_sleep_time_in_seconds)
         #update_streetview_url(driver.current_url, det_x, det_y,driver)
-        look_at_object(driver,pan_lvl,det_x,det_y, meta, lat, lon)
+        look_at_object(driver,pan_lvl,det_x,det_y, meta, lat, lon, idx)
 
 
 def identify_language(meta,lat,lon,language):
@@ -800,17 +822,94 @@ def identify_language(meta,lat,lon,language):
             lang = "unknown"
         return {"text": extreacted_text, "language": lang}
 
-def detect_num_plates(meta,lat,lon):
+#Non maxima surpression - Its needed for the TF model -> otherwise we have lots of overlapping, nearly idientical labels
+def nms_tflite(detections, iou_threshold=0.8):
+    if len(detections) == 0:
+        return []
+    boxes = np.array([[d[0], d[1], d[2]-d[0], d[3]-d[1]] for d in detections], dtype=np.float32)  # x, y, w, h
+    scores = np.array([d[5] for d in detections], dtype=np.float32)
+
+    indices = cv2.dnn.NMSBoxes(
+        bboxes=boxes.tolist(),
+        scores=scores.tolist(),
+        score_threshold=0.01,
+        nms_threshold=iou_threshold
+    )
+    if len(indices) == 0:
+        return []
+    filtered = [detections[i] for i in indices.flatten()]
+    return filtered
+
+def detect_num_plates_s1(meta, lat, lon):
+    global prog
+    #FLite model
+    interpreter = tf.lite.Interpreter(model_path=CAR_MODEL)
+    interpreter.allocate_tensors()
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
     test_images = os.listdir(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/unlabeled")
-    model = YOLO(MODEL_NUM_PLATES)
     for image_file_name in test_images:
         prog.set_step(f"Detecting {meta} in {image_file_name} ({lat},{lon})")
         full_image_path = os.path.join(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/unlabeled", image_file_name)
         img = cv2.imread(full_image_path)
-        predictions = model.predict(full_image_path,verbose=False, imgsz=IMAGE_SIZE_STAGE, conf=CONF_THRESHOLD_STAGE1, stream=False)[0].boxes
-        bounding_box(predictions, model, image_file_name, img, meta, lat, lon)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #resize input to 640,640
+        h, w = input_details[0]['shape'][1], input_details[0]['shape'][2]
+        resized = cv2.resize(img_rgb, (w, h))
+        input_tensor = np.expand_dims(resized / 255.0, axis=0).astype(np.float32)
+        #inference
+        interpreter.set_tensor(input_details[0]['index'], input_tensor)
+        interpreter.invoke()
+        output_data = interpreter.get_tensor(output_details[0]['index'])[0]
+        h_img, w_img, _ = img.shape
+        detections = []
+
+        for pred in output_data:
+            score = pred[4]
+            if score < CONF_THRESHOLD_STAGE1:
+                continue
+            #class id
+            cls_id = int(np.argmax(pred[5:]))
+            label = CLASS_LABELS_CARS[cls_id]
+
+            if label not in KEEP_CLASSES_CARS:
+                continue
+            #box coordinates (YOLO notation)
+            x, y, bw, bh = pred[0:4]
+            x1 = int((x - bw/2) * w_img)
+            y1 = int((y - bh/2) * h_img)
+            x2 = int((x + bw/2) * w_img)
+            y2 = int((y + bh/2) * h_img)
+            #skip small detections (zoom level will not be sufficient for a good labeling in stage 2)
+            if abs(x2 - x1) < 60 or abs(y2 - y1) < 60:
+                continue
+            detections.append([x1, y1, x2, y2, cls_id, float(score), label])
+        detections = nms_tflite(detections)
+        bounding_box(detections, None, image_file_name, img, meta, lat, lon)
+
     prog.cancel_point()
     prog.set_step(f"Done annotating images {meta} ({lat},{lon})")
+
+def detect_num_plates_s2(meta, lat, lon):
+    global prog
+    VEHICLE_CLASSES = {2, 3, 5, 7}
+    output_folder_s1 = f"{BASE_FOLDER}/{meta}/{lat}_{lon}/labeled_zoomed/stage0"
+    model = YOLO(CAR_MODEL)
+    test_images = os.listdir(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/zoom_folder")
+    labels = []
+    for image_file_name in test_images:
+        prog.set_step(f"Validating found meta {meta} in zoomed in image {image_file_name} ({lat},{lon})")
+        # "streetview"+str(image_file_name.split("zoomed")[-1])
+        full_image_path = os.path.join(f"{BASE_FOLDER}/{meta}/{lat}_{lon}/zoom_folder", image_file_name)
+        img = cv2.imread(full_image_path)
+        predictions = model.predict(full_image_path, verbose=False, imgsz=IMAGE_SIZE_STAGE, conf=CONF_THRESHOLD_STAGE1, stream=False)[0]
+        filtered_boxes = []
+        for box in predictions.boxes:
+            cls_id = int(box.cls[0])
+            if cls_id in VEHICLE_CLASSES:
+                filtered_boxes.append(box)
+        bounding_box(filtered_boxes, model, image_file_name, img, meta, lat, lon)
+
 
 def capture_streetview_360_degree_images(driver, lat, lon, meta, pan_hold_time = one_sleep_time_in_seconds):
     global prog
@@ -828,11 +927,15 @@ def capture_streetview_360_degree_images(driver, lat, lon, meta, pan_hold_time =
         time.sleep(zero_five_sleep_time_in_seconds)
     if "bollard" in meta:
         run_inference_stage_1(meta,lat,lon)
-    else:
-        detect_num_plates(meta,lat,lon)
+        zoom_in_found_objects(driver, url, pan_hold_time, meta, lat, lon)
+        run_inference_stage_2(meta, lat, lon)
         return
-    zoom_in_found_objects(driver, url,pan_hold_time, meta,lat,lon)
-    run_inference_stage_2(meta, lat, lon)
+    else:
+        detect_num_plates_s1(meta,lat,lon)
+        zoom_in_found_objects(driver, url, pan_hold_time, meta, lat, lon)
+        detect_num_plates_s2(meta, lat, lon)
+        return
+
 
 
 
