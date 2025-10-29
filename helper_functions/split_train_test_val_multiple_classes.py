@@ -73,7 +73,7 @@ def copy_and_fix_labels(files, split):
             for line in lines:
                 parts = line.strip().split()
                 if len(parts) >= 5:
-                    fixed_lines.append(" ".join(parts) + "\n")  # Preserve original class
+                    fixed_lines.append(" ".join(parts) + "\n")  # Preserve train class
 
             with open(dst_label, "w") as f:
                 f.writelines(fixed_lines)

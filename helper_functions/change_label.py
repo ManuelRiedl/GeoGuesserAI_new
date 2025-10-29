@@ -30,7 +30,7 @@ def update_class_ids_with_mapping(input_dir, original_ids, new_labels):
 
     Parameters:
     - input_dir: Directory containing label files.
-    - original_ids: List of original class IDs as strings, e.g., ['0', '1'].
+    - original_ids: List of train class IDs as strings, e.g., ['0', '1'].
     - new_labels: List of new class IDs as strings, e.g., ['3', '6'].
     """
     assert len(original_ids) == len(new_labels), "Mapping lists must be the same length."

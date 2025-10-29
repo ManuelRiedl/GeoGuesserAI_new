@@ -16,7 +16,7 @@ MODEL_NAME = "yolov8l.pt"
 EXPERIMENT_NAME = "all_classes"
 
 # --- Class Mapping ---
-# Map original class IDs (as strings) to general classes
+# Map train class IDs (as strings) to general classes
 # Example: specific bollards -> 0, guardrails -> 1, chevrons -> 2
 """
 CLASS_MAPPING = {
@@ -162,7 +162,7 @@ from pathlib import Path
 # --- Config ---
 VAL_IMAGE_FOLDER = f"{OUTPUT_DIR}/images/val"  # contains cropped validation images
 VAL_LABEL_FOLDER = f"{OUTPUT_DIR}/labels/val"
-ORIGINAL_DATA_ROOT = "data/images_unlabeled"  # where full original images and labels are
+ORIGINAL_DATA_ROOT = "data/images_unlabeled"  # where full train images and labels are
 OUTPUT_IMG_DIR = f"{OUTPUT_DIR}/original_validation/images"
 OUTPUT_LABEL_DIR = f"{OUTPUT_DIR}/original_validation/labels"
 
@@ -198,14 +198,14 @@ def find_label(base_name):
             return candidate
     return None
 
-# Collect original image names from cropped filenames
+# Collect train image names from cropped filenames
 original_names = set()
 for file in os.listdir(VAL_IMAGE_FOLDER):
     if "_crop" in file:
         base = file.split("_crop")[0]
         original_names.add(base)
 
-print(f"🔍 Found {len(original_names)} original base names from validation crops.")
+print(f"🔍 Found {len(original_names)} train base names from validation crops.")
 
 # Copy files
 for name in original_names:
@@ -222,4 +222,4 @@ for name in original_names:
     else:
         print(f"⚠️ Label not found for: {name}")
 
-print(f"\n✅ Copied all available original validation images and labels to `original_validation/`")
+print(f"\n✅ Copied all available train validation images and labels to `original_validation/`")

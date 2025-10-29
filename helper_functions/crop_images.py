@@ -77,7 +77,7 @@ for label_file in os.listdir(ORIG_LABEL_DIR):
 
         with open(os.path.join(CROPPED_LABEL_DIR, crop_label_name), "w") as lf:
             for cls, x_, y_, w_, h_ in all_boxes:
-                # Get original box in pixel coordinates
+                # Get train box in pixel coordinates
                 bx1, by1, bx2, by2 = xywh_to_xyxy(x_, y_, w_, h_, img_w, img_h)
 
                 # Check if box center is inside crop

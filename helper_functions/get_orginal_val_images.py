@@ -5,7 +5,7 @@ from pathlib import Path
 # --- Config ---
 VAL_IMAGE_FOLDER = "project_1/images/val"  # contains cropped validation images
 VAL_LABEL_FOLDER = "project_1/labels/val"
-ORIGINAL_DATA_ROOT = "data/images_unlabeled"  # where full original images and labels are
+ORIGINAL_DATA_ROOT = "data/images_unlabeled"  # where full train images and labels are
 OUTPUT_IMG_DIR = "original_validation/images"
 OUTPUT_LABEL_DIR = "original_validation/labels"
 
@@ -41,7 +41,7 @@ def find_label(base_name):
             return candidate
     return None
 
-# Collect original image names from cropped filenames
+# Collect train image names from cropped filenames
 original_names = set()
 for file in os.listdir(VAL_IMAGE_FOLDER):
     if "_crop_" in file:
