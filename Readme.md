@@ -28,8 +28,10 @@ The system performs automated Street View navigation (pan, center, zoom) using S
 HomeScreen:
 ![home_screen](helper_functions/example_images/homeScreen.PNG)
 
+
 Meta Selection Screen:
 ![selection_screen](helper_functions/example_images/selectionScreen.PNG)
+
 
 Fetching Screen:
 ![fetching_screen](helper_functions/example_images/selectionScreenFinal.png)
@@ -39,8 +41,10 @@ The created map can be accessed here: [GeoGuessr](https://www.geoguessr.com/de/m
 Free sample challenges can be accessed here:  
 [Sample 1](https://www.geoguessr.com/challenge/DYQWxIN8zLOHH5re),[Sample 2](https://www.geoguessr.com/challenge/sO2muhiRY0paPNyv), and [Sample 3](https://www.geoguessr.com/challenge/IooAJ1YpoqdIXNFa).
 
+
 Distribution of the found locations:
 ![found_dist](helper_functions/example_images/FoundLocations.PNG)
+
 Examples:
 ![ex5](helper_functions/example_images/ex5.PNG)
 ![ex6](helper_functions/example_images/ex6.PNG)
