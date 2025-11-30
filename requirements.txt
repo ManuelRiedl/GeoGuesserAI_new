@@ -1,0 +1,11 @@
+rich
+readchar
+keyboard
+tensorflow
+pytesseract
+langdetect
+opencv-python
+numpy
+selenium
+ultralytics
+pillow
