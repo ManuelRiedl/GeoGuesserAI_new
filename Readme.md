@@ -1,5 +1,5 @@
 # Automated GeoGuessr Meta Finder
-The full paper can be accessed here:
+The full paper can be accessed here: [GeoGuessrAI](GeoguessrAI_Location_Finder.pdf)
 
 This project implements an automated approach for identifying country-specific bollards in Google Street View imagery.  
 The goal is to automatically generate GeoGuessr learning maps by finding locations that contain relevant metas, specifically European road bollards.
@@ -39,6 +39,8 @@ The created map can be accessed here: [GeoGuessr](https://www.geoguessr.com/de/m
 Free sample challenges can be accessed here:  
 [Sample 1](https://www.geoguessr.com/challenge/DYQWxIN8zLOHH5re),[Sample 2](https://www.geoguessr.com/challenge/sO2muhiRY0paPNyv), and [Sample 3](https://www.geoguessr.com/challenge/IooAJ1YpoqdIXNFa).
 
+Distribution of the found locations:
+![found_dist](helper_functions/example_images/FoundLocations.PNG)
 Examples:
 ![ex5](helper_functions/example_images/ex5.PNG)
 ![ex6](helper_functions/example_images/ex6.PNG)
@@ -50,3 +52,13 @@ git clone <your-repo-url>
 cd <your-repo-folder>
 pip install requirements.txt
 python .\script_UI.py 
+```
+## License
+
+This work is licensed under the 
+Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+
+You are free to use, share, and modify this work for non-commercial purposes,
+but you must give appropriate credit to the author: Manuel Riedl.
+
+For details, see: https://creativecommons.org/licenses/by-nc/4.0/
